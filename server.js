@@ -18,7 +18,10 @@ connectCloudinary();
 
 app.use(express.json());
 const corsOptions = {
-  origin: "https://gregarious-genie-9313d7.netlify.app",
+  origin: [
+    "http://localhost:5173",
+    "https://wonderful-pavlova-b55b5f.netlify.app",
+  ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
