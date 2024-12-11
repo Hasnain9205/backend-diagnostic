@@ -118,22 +118,24 @@ exports.updateTest = async (req, res) => {
 };
 
 exports.deleteTest = async (req, res) => {
-  try {
-    const { testId } = req.params;
-    const test = await testModel.findByIdAndDelete(testId);
+  const { id } = req.params;
 
-    if (!test) {
+  try {
+    const deletedTest = await testModel.findByIdAndDelete(id);
+
+    if (!deletedTest) {
       return res
         .status(404)
         .json({ success: false, message: "Test not found" });
     }
 
-    return res
+    res
       .status(200)
       .json({ success: true, message: "Test deleted successfully" });
   } catch (error) {
-    console.error("Error deleting test:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to delete test", error });
   }
 };
 
