@@ -14,6 +14,7 @@ const {
   updateTestAppointmentStatus,
   downloadInvoice,
   getInvoice,
+  deleteTest,
 } = require("../controllers/testController");
 const upload = require("../middlewares/multer");
 
@@ -43,6 +44,11 @@ testRouter.patch(
   updateTestAppointmentStatus
 );
 testRouter.put("/update-test/:id", authenticationRole(["admin"]), updateTest);
+testRouter.delete(
+  "/delete-test/:testId",
+  authenticationRole(["admin"]),
+  deleteTest
+);
 testRouter.post("/cancel/:id", authenticationRole(["user"]), cancelTest);
 testRouter.post(
   "/create-payment-intent",

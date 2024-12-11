@@ -117,6 +117,26 @@ exports.updateTest = async (req, res) => {
   }
 };
 
+exports.deleteTest = async (req, res) => {
+  try {
+    const { testId } = req.params;
+    const test = await testModel.findByIdAndDelete(testId);
+
+    if (!test) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Test not found" });
+    }
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Test deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting test:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 // Cancel Test Appointment
 exports.cancelTest = async (req, res) => {
   try {

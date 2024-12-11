@@ -216,13 +216,11 @@ exports.deleteDoctor = async (req, res) => {
     const associatedAppointments = await appointmentModel.find({
       docId: doctorId,
     });
-    if (associatedAppointments) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          msg: "Cannot delete doctor with existing appointments",
-        });
+    if (associatedAppointments.length > 0) {
+      return res.status(400).json({
+        success: false,
+        msg: "Cannot delete doctor with existing appointments",
+      });
     }
     const doctor = await userModel.findByIdAndDelete(doctorId);
     if (!doctor) {
