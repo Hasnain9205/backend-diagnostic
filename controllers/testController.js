@@ -86,34 +86,34 @@ exports.getAllTest = async (req, res) => {
 
 // Update Test
 exports.updateTest = async (req, res) => {
+  const { id } = req.params;
+  const { name, category, price, description } = req.body;
+
+  // Input validation
+  if (!name || !category || price <= 0 || !description) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid input data" });
+  }
+
   try {
-    const { name, category, price, description } = req.body;
-
-    const updates = { name, category, price, description };
-
-    if (req.file) {
-      updates.image = req.file.path;
-    }
-
     const updatedTest = await testModel.findByIdAndUpdate(
-      req.params.testId,
-      updates,
-      {
-        new: true,
-      }
+      id,
+      { name, category, price, description },
+      { new: true, runValidators: true }
     );
 
     if (!updatedTest) {
-      return res.status(404).json({ message: "Test not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Test not found" });
     }
 
-    res
-      .status(200)
-      .json({ message: "Test updated successfully", test: updatedTest });
+    res.status(200).json({ success: true, test: updatedTest });
   } catch (error) {
     res
       .status(500)
-      .json({ message: "Error updating test", error: error.message });
+      .json({ success: false, message: "Failed to update test", error });
   }
 };
 

@@ -45,7 +45,7 @@ testRouter.patch(
 );
 testRouter.put("/update-test/:id", authenticationRole(["admin"]), updateTest);
 testRouter.delete(
-  "/delete-test/:testId",
+  "/delete-test/:Id",
   authenticationRole(["admin"]),
   deleteTest
 );

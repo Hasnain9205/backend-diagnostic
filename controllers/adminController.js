@@ -150,9 +150,10 @@ exports.getDoctor = async (req, res) => {
   }
 };
 
+//update doctor api
 exports.updateDoctor = async (req, res) => {
   try {
-    const doctorId = req.params.id; // Get doctor ID from the URL parameter
+    const doctorId = req.params.id;
     const {
       name,
       email,
@@ -167,23 +168,18 @@ exports.updateDoctor = async (req, res) => {
       available,
     } = req.body;
 
-    // Validate required fields
     if (!doctorId) {
       return res.status(400).json({ message: "Doctor ID is required" });
     }
 
-    // Find the doctor by ID
     const doctor = await userModel.findById(doctorId);
     if (!doctor) {
       return res.status(404).json({ message: "Doctor not found" });
     }
-
-    // If password is provided, hash it
     if (password) {
       doctor.password = await bcrypt.hash(password, 10);
     }
 
-    // Update doctor details
     doctor.name = name || doctor.name;
     doctor.email = email || doctor.email;
     doctor.image = image || doctor.image;
@@ -195,10 +191,7 @@ exports.updateDoctor = async (req, res) => {
     doctor.address = address || doctor.address;
     doctor.available = available !== undefined ? available : doctor.available;
 
-    // Save the updated doctor
     const updatedDoctor = await doctor.save();
-
-    // Return the updated doctor details
     res.status(200).json({
       message: "Doctor updated successfully",
       doctor: updatedDoctor,
