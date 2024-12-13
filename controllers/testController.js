@@ -446,9 +446,6 @@ exports.paymentSuccess = async (req, res) => {
 //get invoice
 exports.getInvoice = async (req, res) => {
   try {
-    console.log("Fetching invoices for User:", req.user);
-
-    const userId = req.user.id;
     if (!fs.existsSync(invoiceDir)) {
       console.log("Invoice directory does not exist.");
       return res.status(200).json({ invoices: [] });
@@ -457,15 +454,13 @@ exports.getInvoice = async (req, res) => {
     const allFiles = fs.readdirSync(invoiceDir);
     console.log("All files in directory:", allFiles);
 
-    const invoices = allFiles
-      .filter((file) => file.startsWith(userId))
-      .map((file) => {
-        const [_, appointmentId] = file.split("_");
-        return {
-          fileName: file,
-          appointmentId: appointmentId.replace(".pdf", ""),
-        };
-      });
+    const invoices = allFiles.map((file) => {
+      const [_, appointmentId] = file.split("_");
+      return {
+        fileName: file,
+        appointmentId: appointmentId.replace(".pdf", ""),
+      };
+    });
 
     console.log("Filtered invoices:", invoices);
     res.status(200).json({ invoices });
