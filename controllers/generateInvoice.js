@@ -11,7 +11,7 @@ exports.generateInvoice = async (appointment) => {
   }
 
   // Define file path
-  const fileName = `invoice_${appointment.userId._id}_invoice_${appointment._id}.pdf`;
+  const fileName = `invoice_${appointment._id}.pdf`;
   const filePath = `${invoiceDir}/${fileName}`;
 
   try {
