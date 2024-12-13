@@ -233,19 +233,28 @@ exports.bookTest = async (req, res) => {
 //Get test appointment
 exports.getTestAppointment = async (req, res) => {
   try {
-    const testAppointments = await testAppointmentModel
-      .find({})
-      .populate("testId", "name price category");
+    if (!req.user || !req.user.id) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User not authenticated." });
+    }
 
-    // Log to check if data is fetched correctly
-    console.log(testAppointments);
+    const userId = req.user.id;
+    const testAppointments = await testAppointmentModel
+      .find({ userId })
+      .populate("testId", "name price category")
+      .sort({ createdAt: -1 });
 
     return res
       .status(200)
-      .json({ msg: "All appointment get successfully", testAppointments });
+      .json({
+        success: true,
+        message: "All appointments retrieved successfully.",
+        testAppointments,
+      });
   } catch (error) {
     console.error(error);
-    return res.json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

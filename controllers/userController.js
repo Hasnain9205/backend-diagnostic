@@ -266,18 +266,15 @@ exports.bookAppointment = async (req, res) => {
 // Fetch all appointments for the logged-in user
 exports.getAppointment = async (req, res) => {
   try {
-    const userId = req.user.id; // Assuming user ID is set after authentication
-
-    // Fetch all appointments for the logged-in user
+    const userId = req.user.id;
     const appointments = await appointmentModel
       .find({ userId })
-      .populate("docId", "name specialty address fees") // Populate doctor details
-      .sort({ date: -1 }); // Sort by date (latest first)
+      .populate("docId", "name specialty address fees")
+      .sort({ date: -1 });
 
-    // Add payment status details to each appointment
     const appointmentDetails = appointments.map((appointment) => ({
       ...appointment._doc,
-      isPaid: appointment.payment ? "Paid" : "Pending", // Check payment status
+      isPaid: appointment.payment ? "Paid" : "Pending",
       paymentStatus: appointment.payment
         ? appointment.payment.status
         : "Unpaid",
