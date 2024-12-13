@@ -245,13 +245,11 @@ exports.getTestAppointment = async (req, res) => {
       .populate("testId", "name price category")
       .sort({ createdAt: -1 });
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "All appointments retrieved successfully.",
-        testAppointments,
-      });
+    return res.status(200).json({
+      success: true,
+      message: "All appointments retrieved successfully.",
+      testAppointments,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ success: false, message: error.message });
@@ -448,17 +446,21 @@ exports.paymentSuccess = async (req, res) => {
 //get invoice
 exports.getInvoice = async (req, res) => {
   try {
+    const userId = req.user.id;
     if (!fs.existsSync(invoiceDir)) {
       return res.status(200).json({ invoices: [] });
     }
 
-    const invoices = fs.readdirSync(invoiceDir).map((file) => {
-      const [_, appointmentId] = file.split("_");
-      return {
-        fileName: file,
-        appointmentId: appointmentId.replace(".pdf", ""),
-      };
-    });
+    const invoices = fs
+      .readdirSync(invoiceDir)
+      .filter((file) => file.startsWith(userId))
+      .map((file) => {
+        const [_, appointmentId] = file.split("_");
+        return {
+          fileName: file,
+          appointmentId: appointmentId.replace(".pdf", ""),
+        };
+      });
 
     res.status(200).json({ invoices });
   } catch (error) {
