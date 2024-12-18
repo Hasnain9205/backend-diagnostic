@@ -238,7 +238,11 @@ exports.getTestAppointment = async (req, res) => {
     const testAppointments = await testAppointmentModel.find({});
     res
       .status(200)
-      .json({ success: true, msg: "Get all Test appointment successfully" });
+      .json({
+        success: true,
+        msg: "Get all Test appointment successfully",
+        testAppointments,
+      });
   } catch (error) {
     console.error("Error deleting doctor:", error);
     return res.status(500).json({ success: false, message: "Server error" });
