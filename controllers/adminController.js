@@ -231,6 +231,20 @@ exports.deleteDoctor = async (req, res) => {
   }
 };
 
+//get testAPpointment
+
+exports.getTestAppointment = async (req, res) => {
+  try {
+    const testAppointments = await testAppointmentModel.find({});
+    res
+      .status(200)
+      .json({ success: true, msg: "Get all Test appointment successfully" });
+  } catch (error) {
+    console.error("Error deleting doctor:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 //all appointment list
 
 exports.appointmentsAdmin = async (req, res) => {
