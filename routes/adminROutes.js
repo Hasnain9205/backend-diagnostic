@@ -9,6 +9,7 @@ const {
   updateDoctor,
   deleteDoctor,
   getDoctor,
+  getTestAppointment,
 } = require("../controllers/adminController");
 const { authenticationRole } = require("../middlewares/authenticationRole");
 
@@ -30,7 +31,7 @@ adminRouter.put(
 adminRouter.get(
   "/get-testAppointments",
   authenticationRole(["user", "admin"]),
-  updateDoctor
+  getTestAppointment
 );
 adminRouter.delete(
   "/delete-doctor/:doctorId",
