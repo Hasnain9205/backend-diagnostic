@@ -27,6 +27,11 @@ adminRouter.put(
   authenticationRole(["admin"]),
   updateDoctor
 );
+adminRouter.get(
+  "/get-testAppointments",
+  authenticationRole(["user", "admin"]),
+  updateDoctor
+);
 adminRouter.delete(
   "/delete-doctor/:doctorId",
   authenticationRole(["admin"]),
