@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const validator = require("validator");
 const appointmentModel = require("../models/appointmentModel");
 const userModel = require("../models/userModel");
+const testAppointmentModel = require("../models/testAppointmentModel");
 
 // Add doctor API
 exports.addDoctor = async (req, res) => {
@@ -309,6 +310,7 @@ exports.adminDashboard = async (req, res) => {
   try {
     const doctors = await userModel.find({ role: "doctor" });
     const users = await userModel.find({ role: "user" });
+    const testAppointment = await testAppointmentModel.find({});
     const appointments = await appointmentModel
       .find({})
       .populate("userId", "name profileImage email address phone")
@@ -322,6 +324,7 @@ exports.adminDashboard = async (req, res) => {
       doctors: doctors.length,
       appointments: appointments.length,
       patients: users.length,
+      testAppointments: testAppointment.length,
       latestAppointments: appointments.slice(0, 5), // Get only the latest 5 appointments
     };
 
