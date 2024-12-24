@@ -1,5 +1,6 @@
 const appointmentModel = require("../models/appointmentModel");
 const userModel = require("../models/userModel");
+const mongoose = require("mongoose");
 
 // get doctorDetails api
 exports.doctorDetails = async (req, res) => {
@@ -52,21 +53,17 @@ exports.doctorList = async (req, res) => {
 //doctor appointment
 exports.doctorAppointment = async (req, res) => {
   try {
-    // Get docId from query parameters
     const { docId } = req.query;
-
-    // Validate that docId is provided
     if (!docId) {
       return res.status(400).json({ message: "Doctor ID is required" });
     }
 
-    // Fetch appointments for the given doctor, sorted by slotDate in descending order
     const appointments = await appointmentModel
       .find({ docId })
-      .sort({ slotDate: -1 }) // Sort by slotDate descending
-      .populate("userData", "name"); // Optionally populate user data if needed (e.g., patient's name)
+      .sort({ slotDate: -1 })
+      .populate("userId", "name email profileImage address");
     console.log("a...", appointments);
-    // Check if appointments are found
+
     if (!appointments.length) {
       return res
         .status(404)
@@ -170,45 +167,58 @@ exports.appointmentCancel = async (req, res) => {
 exports.doctorDashboard = async (req, res) => {
   try {
     const { docId } = req.query;
+
     if (!docId) {
-      return res.status(400).json({ message: "Invalid or missing Doctor ID" });
+      return res.status(400).json({ message: "Doctor ID is required" });
     }
 
-    const appointments = await appointmentModel
-      .find({ docId })
-      .sort({ slotDate: -1 });
+    const doctorObjectId = new mongoose.Types.ObjectId(docId); // Fix for ObjectId usage
 
-    if (appointments.length === 0) {
-      return res
-        .status(200)
-        .json({ msg: "No appointments found", dashData: {} });
-    }
-    let earnings = 0;
-    const patients = new Set();
-    appointments.forEach((appointment) => {
-      if (appointment.isCompleted || appointment.payment) {
-        earnings += appointment.amount || 0;
-      }
-      patients.add(appointment.userId.toString());
+    // Fetch total earnings, appointments, and unique patients
+    const totalEarnings = await appointmentModel.aggregate([
+      { $match: { docId: doctorObjectId, payment: true } },
+      { $group: { _id: null, earnings: { $sum: "$amount" } } },
+    ]);
+
+    const totalAppointments = await appointmentModel.countDocuments({
+      docId: doctorObjectId,
     });
 
-    // Prepare dashboard data
-    const dashData = {
-      earnings,
-      appointments: appointments.length,
-      patients: patients.size, // Count of unique patients
-      latestAppointments: appointments.slice(0, 5), // Latest 5 appointments
-    };
+    const uniquePatients = await appointmentModel.distinct("userId", {
+      docId: doctorObjectId,
+    });
 
-    // Send success response with data
-    return res
-      .status(200)
-      .json({ msg: "Doctor dashboard data retrieved successfully", dashData });
+    // Fetch latest appointments
+    const latestAppointments = await appointmentModel
+      .find({ docId: doctorObjectId })
+      .sort({ slotDate: -1, slotTime: -1 })
+      .limit(5)
+      .populate("userId", "name email profileImage phone address");
+
+    // Appointments by Date
+    const appointmentsByDate = await appointmentModel.aggregate([
+      { $match: { docId: doctorObjectId } },
+      {
+        $group: {
+          _id: "$slotDate",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    res.status(200).json({
+      dashData: {
+        earnings: totalEarnings[0]?.earnings || 0,
+        appointments: totalAppointments,
+        patients: uniquePatients.length,
+        latestAppointments,
+        appointmentsByDate,
+      },
+    });
   } catch (error) {
-    console.error("Error fetching doctor dashboard data:", error); // Log for debugging
-    return res
-      .status(500)
-      .json({ message: "An error occurred. Please try again later." });
+    console.error("Error fetching dashboard data:", error.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 

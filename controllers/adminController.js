@@ -235,14 +235,15 @@ exports.deleteDoctor = async (req, res) => {
 
 exports.getTestAppointment = async (req, res) => {
   try {
-    const testAppointments = await testAppointmentModel.find({});
-    res
-      .status(200)
-      .json({
-        success: true,
-        msg: "Get all Test appointment successfully",
-        testAppointments,
-      });
+    const testAppointments = await testAppointmentModel
+      .find({})
+      .populate("testId", "name category image")
+      .populate("userId", "name email profileImage phone");
+    res.status(200).json({
+      success: true,
+      msg: "Get all Test appointment successfully",
+      testAppointments,
+    });
   } catch (error) {
     console.error("Error deleting doctor:", error);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -253,7 +254,9 @@ exports.getTestAppointment = async (req, res) => {
 
 exports.appointmentsAdmin = async (req, res) => {
   try {
-    const appointments = await appointmentModel.find({});
+    const appointments = await appointmentModel
+      .find({})
+      .populate("userId", "name email phone profileImage");
     return res
       .status(200)
       .json({ msg: "All appointment get successfully", appointments });
@@ -343,12 +346,13 @@ exports.adminDashboard = async (req, res) => {
       appointments: appointments.length,
       patients: users.length,
       testAppointments: testAppointment.length,
-      latestAppointments: appointments.slice(0, 5), // Get only the latest 5 appointments
+      latestAppointments: appointments.slice(0, 5),
+      doctorAppointments: appointments,
     };
 
     return res
       .status(200)
-      .json({ msg: "All data fetched successfully", dashData });
+      .json({ msg: "All data fetched successfully", dashData, appointments });
   } catch (error) {
     console.error("Error fetching data:", error); // Log the error for debugging
     return res.status(500).json({ message: error.message });

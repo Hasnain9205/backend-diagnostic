@@ -10,19 +10,10 @@ const appointmentModel = new mongoose.Schema({
   slotDate: { type: String, required: true },
   slotTime: { type: String, required: true },
   userData: {
-    type: {
-      name: String,
-      email: String,
-    },
-    required: true,
+    type: Object,
   },
   docData: {
-    type: {
-      name: String,
-      specialty: String,
-      address: String,
-    },
-    required: true,
+    type: Object,
   },
   amount: { type: Number, required: true },
   date: { type: Date, default: Date.now }, // Set default to the current date and time
