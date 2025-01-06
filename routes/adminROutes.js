@@ -12,6 +12,12 @@ const {
   getTestAppointment,
 } = require("../controllers/adminController");
 const { authenticationRole } = require("../middlewares/authenticationRole");
+const {
+  addDiagnostic,
+  getDiagnosticById,
+  updateDiagnostic,
+  deleteDiagnostic,
+} = require("../controllers/diagnosticController");
 
 const adminRouter = express.Router();
 
@@ -21,33 +27,54 @@ adminRouter.post(
   upload.single("image"),
   addDoctor
 );
+
 adminRouter.get("/doctors", authenticationRole(["admin"]), allDoctor);
 adminRouter.get("/doctor/:id", authenticationRole(["admin"]), getDoctor);
 adminRouter.put(
   "/update-doctor/:id",
-  authenticationRole(["admin"]),
+  authenticationRole(["admin", "diagnostic"]),
   updateDoctor
 );
 adminRouter.get(
   "/get-testAppointments",
-  authenticationRole(["user", "admin"]),
+  authenticationRole(["user", "admin", "diagnostic"]),
   getTestAppointment
 );
 adminRouter.delete(
   "/delete-doctor/:doctorId",
-  authenticationRole(["admin"]),
+  authenticationRole(["admin", "diagnostic"]),
   deleteDoctor
 );
 adminRouter.get(
-  "/all-appointment",
-  authenticationRole(["admin"]),
+  "/all-appointment/:centerId",
+  authenticationRole(["admin", "diagnostic"]),
   appointmentsAdmin
 );
 adminRouter.post(
   "/cancel-appointment",
-  authenticationRole(["admin"]),
+  authenticationRole(["admin", "diagnostic"]),
   appointmentCancelAdmin
 );
 adminRouter.get("/dashboard", authenticationRole(["admin"]), adminDashboard);
-
+adminRouter.post(
+  "/add-diagnostic",
+  authenticationRole(["admin"]),
+  upload.single("image"),
+  addDiagnostic
+);
+adminRouter.get(
+  "/diagnostic-by-id/:id",
+  authenticationRole(["user", "admin"]),
+  getDiagnosticById
+);
+adminRouter.put(
+  "/update-diagnostic/:id",
+  authenticationRole(["admin"]),
+  updateDiagnostic
+);
+adminRouter.delete(
+  "/delete-diagnostic/:id",
+  authenticationRole(["admin"]),
+  deleteDiagnostic
+);
 module.exports = adminRouter;

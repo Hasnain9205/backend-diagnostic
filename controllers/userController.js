@@ -3,12 +3,23 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const validator = require("validator");
 const appointmentModel = require("../models/appointmentModel");
+const centerModel = require("../models/centerModel");
 const cloudinary = require("cloudinary").v2;
 
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password, address, gender, dob, phone } = req.body;
-    if (!name || !email || !password || !address || !gender || !dob || !phone) {
+    const { name, email, password, address, gender, phone, district, upazila } =
+      req.body;
+    if (
+      !name ||
+      !email ||
+      !password ||
+      !address ||
+      !gender ||
+      !phone ||
+      !district ||
+      !upazila
+    ) {
       return res.status(400).json({ msg: "All fields are required" });
     }
     if (!validator.isEmail(email)) {
@@ -18,9 +29,6 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ msg: "Enter a valid phone number" });
     }
 
-    if (!validator.isDate(dob)) {
-      return res.status(400).json({ msg: "Enter a valid date of birth" });
-    }
     if (password.length < 8) {
       return res.status(400).json({ msg: "Password must be at 8 characters" });
     }
@@ -49,8 +57,9 @@ exports.registerUser = async (req, res) => {
       profileImage,
       address: address || {},
       gender: gender || "Not Selected",
-      dob: dob || "Not Selected",
       phone: phone || "000000000",
+      district,
+      upazila,
     };
     const newUser = new userModel(userData);
     await newUser.save();
@@ -64,41 +73,49 @@ exports.registerUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
   try {
+    // Validate input
     if (!email || !password) {
       return res.status(400).json({ msg: "Email and password are required" });
     }
 
-    let user = await userModel.findOne({ role: "doctors" });
+    // Fetch user by email
+    const user = await userModel.findOne({ email });
     if (!user) {
-      // If not admin, check if the user is a general user
-      user = await userModel.findOne({ email });
-      if (!user) {
-        return res.status(400).json({ msg: "Invalid credentials" });
-      }
+      return res.status(400).json({ msg: "Invalid credentials" });
     }
+
+    // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ msg: "Invalid credentials" });
     }
 
+    // Generate tokens
     const accessToken = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "1m",
-      }
+      { expiresIn: "1h" } // Adjust as needed
     );
     const refreshToken = jwt.sign(
-      { id: user._id },
+      { id: user._id, role: user.role }, // Include role if necessary
       process.env.REFRESH_SECRET,
-      {
-        expiresIn: "7d",
-      }
+      { expiresIn: "7d" }
     );
-    res
-      .status(200)
-      .json({ msg: "Login successfully", user, accessToken, refreshToken });
+
+    // Return response
+    res.status(200).json({
+      msg: "Login successfully",
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+      },
+      user,
+      accessToken,
+      refreshToken,
+    });
   } catch (error) {
+    console.error("Login error:", error.message);
     return res.status(500).json({ message: error.message });
   }
 };
@@ -195,23 +212,26 @@ exports.updateUserProfile = async (req, res) => {
 };
 
 // Book an appointment
-
 exports.bookAppointment = async (req, res) => {
-  const { userId, docId, slotDate, slotTime } = req.body;
+  const { userId, docId, centerId, slotDate, slotTime } = req.body;
 
   try {
-    if (!userId || !docId || !slotDate || !slotTime) {
+    if (!userId || !docId || !centerId || !slotDate || !slotTime) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
     const doctor = await userModel.findById(docId);
     const user = await userModel.findById(userId);
+    const center = await centerModel.findById(centerId);
 
     if (!doctor) {
       return res.status(404).json({ message: "Doctor not found" });
     }
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+    if (!center) {
+      return res.status(404).json({ message: "Center not found" });
     }
 
     // Check if slot is already booked
@@ -227,6 +247,7 @@ exports.bookAppointment = async (req, res) => {
     const appointment = new appointmentModel({
       userId,
       docId,
+      centerId,
       slotDate,
       slotTime,
       amount: doctor.fees,

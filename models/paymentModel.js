@@ -16,6 +16,7 @@ const paymentSchema = new mongoose.Schema(
       required: true,
     },
     paymentId: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );

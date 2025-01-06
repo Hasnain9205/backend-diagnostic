@@ -15,6 +15,7 @@ const {
   downloadInvoice,
   getInvoice,
   deleteTest,
+  completedTestAppointment,
 } = require("../controllers/testController");
 const upload = require("../middlewares/multer");
 
@@ -22,7 +23,7 @@ const testRouter = express.Router();
 
 testRouter.post(
   "/create-test",
-  authenticationRole(["admin"]),
+  authenticationRole(["diagnostic"]),
   upload.single("image"),
   createTest
 );
@@ -38,15 +39,25 @@ testRouter.get(
   authenticationRole(["user", "admin"]),
   getTestAppointment
 );
+
+testRouter.post(
+  "/completed-test/:appointmentId",
+  authenticationRole(["diagnostic"]),
+  completedTestAppointment
+);
 testRouter.patch(
   "/update-appointment-status/:id",
   authenticationRole(["admin"]),
   updateTestAppointmentStatus
 );
-testRouter.put("/update-test/:id", authenticationRole(["admin"]), updateTest);
+testRouter.put(
+  "/update-test/:id",
+  authenticationRole(["admin", "diagnostic"]),
+  updateTest
+);
 testRouter.delete(
   "/delete-test/:id",
-  authenticationRole(["admin"]),
+  authenticationRole(["admin", "diagnostic"]),
   deleteTest
 );
 testRouter.post("/cancel/:id", authenticationRole(["user"]), cancelTest);

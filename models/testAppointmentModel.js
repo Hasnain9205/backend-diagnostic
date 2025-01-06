@@ -12,6 +12,13 @@ const testAppointmentModel = new mongoose.Schema(
       ref: "Test",
       required: true,
     },
+
+    centerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Center",
+      required: true,
+    },
+    tests: [{ type: mongoose.Schema.Types.ObjectId, ref: "Test" }],
     appointmentDate: {
       type: String,
       required: true,

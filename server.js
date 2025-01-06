@@ -9,6 +9,7 @@ const testRouter = require("./routes/testRoutes");
 const paymentRouter = require("./routes/paymentRoutes");
 const invoiceRouter = require("./routes/invoiceRoutes");
 const userRouter = require("./routes/userRoutes");
+const diagnosticRouter = require("./routes/diagnosticRoutes");
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -40,6 +41,7 @@ app.use("/api/admin", adminRouter);
 app.use("/api/users", userRouter);
 app.use("/api/doctor", doctorRouter);
 app.use("/api/tests", testRouter);
+app.use("/api/diagnostic", diagnosticRouter);
 app.use("/api/invoice", invoiceRouter);
 app.use("/api/payment", paymentRouter);
 

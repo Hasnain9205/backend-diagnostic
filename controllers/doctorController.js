@@ -49,7 +49,22 @@ exports.doctorList = async (req, res) => {
     });
   }
 };
-
+//filter doctor api
+exports.filterDoctor = async (req, res) => {
+  try {
+    const { district, upazila, specialty } = req.query;
+    const filters = {};
+    if (district) filters.district = district;
+    if (upazila) filters.upazila = upazila;
+    if (specialty) filters.specialty = specialty;
+    const doctors = await userModel.find(filters);
+    res
+      .status(200)
+      .json({ success: true, msg: "Filter doctor successfully", doctors });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
 //doctor appointment
 exports.doctorAppointment = async (req, res) => {
   try {

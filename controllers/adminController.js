@@ -14,11 +14,13 @@ exports.addDoctor = async (req, res) => {
       speciality,
       degree,
       experience,
-      about,
       fees,
       address,
       profileImage,
       availableSlots,
+      district,
+      upazila,
+      chamber,
     } = req.body;
 
     if (!profileImage) {
@@ -34,9 +36,11 @@ exports.addDoctor = async (req, res) => {
       !speciality ||
       !degree ||
       !experience ||
-      !about ||
       !fees ||
-      !address
+      !address ||
+      !district ||
+      !upazila ||
+      !chamber
     ) {
       return res
         .status(400)
@@ -78,9 +82,11 @@ exports.addDoctor = async (req, res) => {
       speciality,
       degree,
       experience,
-      about,
       fees,
       address,
+      district,
+      upazila,
+      chamber,
       profileImage,
       role: "doctor",
       date: Date.now(),
@@ -254,8 +260,9 @@ exports.getTestAppointment = async (req, res) => {
 
 exports.appointmentsAdmin = async (req, res) => {
   try {
+    const { centerId } = req.params;
     const appointments = await appointmentModel
-      .find({})
+      .find({ centerId })
       .populate("userId", "name email phone profileImage");
     return res
       .status(200)
@@ -358,3 +365,5 @@ exports.adminDashboard = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+//add diagnostic api

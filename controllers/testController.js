@@ -6,16 +6,16 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const fs = require("fs");
 const path = require("path");
 const { generateInvoice } = require("./generateInvoice");
+const centerModel = require("../models/centerModel");
 const invoiceDir = path.join(__dirname, "../invoices");
 
 // Create Test
 exports.createTest = async (req, res) => {
   try {
-    console.log(req.body);
-    const { name, category, price, description, image } = req.body;
+    const { name, category, price, description, image, centerId } = req.body;
 
     // Validate if the required fields are present
-    if (!name || !category || !price || !description || !image) {
+    if (!name || !category || !price || !description || !image || !centerId) {
       return res.status(400).json({
         success: false,
         message:
@@ -30,21 +30,42 @@ exports.createTest = async (req, res) => {
         message: "Price must be a positive number",
       });
     }
-
-    // Create the new test document in the database
     const newTest = await testModel.create({
       name,
       category,
       price,
       description,
       image,
+      centerId,
     });
+    if (!newTest) {
+      return res
+        .status(404)
+        .json({ success: false, msg: "Failed to create test" });
+    }
+    // Add the test to the center
+    const updatedCenter = await centerModel
+      .findByIdAndUpdate(
+        centerId,
+        { $addToSet: { tests: newTest._id } },
+        { new: true }
+      )
+      .populate("tests");
+
+    if (!updatedCenter) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Center not found." });
+    }
 
     // Send success response with the newly created test
     res.status(201).json({
       success: true,
       message: "Test created successfully",
-      data: newTest,
+      data: {
+        test: newTest,
+        center: updatedCenter,
+      },
     });
   } catch (error) {
     // Handle any errors that occur during the process
@@ -173,27 +194,36 @@ exports.bookTest = async (req, res) => {
   const {
     userId,
     testId,
+    centerId,
     appointmentDate,
     appointmentTime,
     paymentStatus = "unpaid",
   } = req.body;
 
   try {
-    if (!userId || !testId || !appointmentDate || !appointmentTime) {
+    if (
+      !userId ||
+      !testId ||
+      !centerId ||
+      !appointmentDate ||
+      !appointmentTime
+    ) {
       return res.status(400).json({
         message:
-          "All fields are required: userId, testId, appointmentDate, appointmentTime.",
+          "All fields are required: userId, testId,centerId, appointmentDate, appointmentTime.",
       });
     }
 
     // Validate user and test existence
-    const [user, test] = await Promise.all([
+    const [user, test, center] = await Promise.all([
       userModel.findById(userId),
       testModel.findById(testId),
+      centerModel.findById(centerId),
     ]);
 
     if (!user) return res.status(404).json({ message: "User not found." });
     if (!test) return res.status(404).json({ message: "Test not found." });
+    if (!center) return res.status(404).json({ message: "Center not found." });
 
     // Check for existing appointment
     const existingAppointment = await testAppointmentModel.findOne({
@@ -211,6 +241,7 @@ exports.bookTest = async (req, res) => {
     const newAppointment = await testAppointmentModel.create({
       userId,
       testId,
+      centerId,
       appointmentDate,
       appointmentTime,
       status: paymentStatus === "paid" ? "booked" : "pending",
@@ -253,6 +284,28 @@ exports.getTestAppointment = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+//completed test appointment
+
+exports.completedTestAppointment = async (req, res) => {
+  const { appointmentId } = req.params;
+  try {
+    const appointment = await testAppointmentModel.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ msg: "Appointment not found" });
+    }
+    appointment.status = "completed";
+    await appointment.save();
+
+    res.status(200).json({
+      message: "Appointment marked as completed successfully",
+      appointment,
+    });
+  } catch (error) {
+    console.error("Error completing appointment:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 

@@ -9,6 +9,7 @@ const {
   updateDoctorProfile,
   doctorDetails,
   uniquePatients,
+  filterDoctor,
 } = require("../controllers/doctorController");
 const { authenticationRole } = require("../middlewares/authenticationRole");
 
@@ -16,6 +17,7 @@ const doctorRouter = express.Router();
 
 doctorRouter.get("/doctor-details/:id", doctorDetails);
 doctorRouter.get("/doctors-list", doctorList);
+doctorRouter.get("/filter-doctor", authenticationRole(["user"]), filterDoctor);
 doctorRouter.get("/unique-patients", uniquePatients);
 doctorRouter.get(
   "/appointment-doctor",

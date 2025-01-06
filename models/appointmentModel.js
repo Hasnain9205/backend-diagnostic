@@ -7,6 +7,11 @@ const appointmentModel = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+  centerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Center",
+    required: true,
+  },
   slotDate: { type: String, required: true },
   slotTime: { type: String, required: true },
   userData: {
@@ -25,7 +30,7 @@ const appointmentModel = new mongoose.Schema({
     default: "pending",
   },
   paymentIntentId: { type: String },
-  cancelledAt: { type: Date },
+  cancelledAt: { type: Date, default: Date.now },
 });
 
 appointmentModel.index({ userId: 1, docId: 1, slotDate: 1 });
