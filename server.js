@@ -22,7 +22,7 @@ app.use(express.json());
 
 // CORS configuration
 const corsOptions = {
-  origin: ["https://tourmaline-mermaid-8794ce.netlify.app"],
+  origin: ["https://dynamic-sunshine-92e5b6.netlify.app"],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
