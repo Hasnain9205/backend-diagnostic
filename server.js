@@ -24,7 +24,7 @@ app.use(express.json());
 const corsOptions = {
   origin: [
     "http://localhost:5173",
-    "https://animated-seahorse-9f26f7.netlify.app",
+    "https://spontaneous-starship-9b651d.netlify.app",
   ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
