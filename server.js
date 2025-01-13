@@ -10,6 +10,7 @@ const paymentRouter = require("./routes/paymentRoutes");
 const invoiceRouter = require("./routes/invoiceRoutes");
 const userRouter = require("./routes/userRoutes");
 const diagnosticRouter = require("./routes/diagnosticRoutes");
+const prescriptionRouter = require("./routes/prescriptionRoutes");
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -22,7 +23,10 @@ app.use(express.json());
 
 // CORS configuration
 const corsOptions = {
-  origin: ["https://dynamic-sunshine-92e5b6.netlify.app"],
+  origin: [
+    "http://localhost:5173",
+    "https://dynamic-sunshine-92e5b6.netlify.app",
+  ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -41,10 +45,20 @@ app.use("/api/tests", testRouter);
 app.use("/api/diagnostic", diagnosticRouter);
 app.use("/api/invoice", invoiceRouter);
 app.use("/api/payment", paymentRouter);
+app.use("/api/prescriptions", prescriptionRouter);
 
 // Test route
 app.get("/", (req, res) => {
   res.send("API working!");
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+  });
 });
 
 // Start server

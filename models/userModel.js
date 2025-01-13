@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     profileImage: { type: String },
     address: { type: Object, default: { line1: "", line2: "" } },
+    age: { type: String },
     gender: { type: String, default: "Not Selected" },
     phone: { type: String, default: "000000000" },
     speciality: { type: String, default: null },

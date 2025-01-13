@@ -8,8 +8,17 @@ const cloudinary = require("cloudinary").v2;
 
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password, address, gender, phone, district, upazila } =
-      req.body;
+    const {
+      name,
+      email,
+      password,
+      address,
+      gender,
+      phone,
+      district,
+      upazila,
+      age,
+    } = req.body;
     if (
       !name ||
       !email ||
@@ -18,7 +27,8 @@ exports.registerUser = async (req, res) => {
       !gender ||
       !phone ||
       !district ||
-      !upazila
+      !upazila ||
+      !age
     ) {
       return res.status(400).json({ msg: "All fields are required" });
     }
@@ -60,6 +70,7 @@ exports.registerUser = async (req, res) => {
       phone: phone || "000000000",
       district,
       upazila,
+      age,
     };
     const newUser = new userModel(userData);
     await newUser.save();

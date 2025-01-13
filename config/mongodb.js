@@ -10,6 +10,11 @@ const connectDB = async () => {
   try {
     const mongoURI = `${process.env.MONGODB_URI}/DiagnosticDB`;
 
+    const options = {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    };
+
     mongoose.connection.on("connected", () => {
       console.log("MongoDB connected successfully");
     });
@@ -26,7 +31,7 @@ const connectDB = async () => {
       console.log("MongoDB reconnected successfully.");
     });
 
-    await mongoose.connect(mongoURI);
+    await mongoose.connect(mongoURI, options);
   } catch (error) {
     console.error("Error connecting to MongoDB:", error.message);
     process.exit(1);

@@ -76,7 +76,8 @@ exports.doctorAppointment = async (req, res) => {
     const appointments = await appointmentModel
       .find({ docId })
       .sort({ slotDate: -1 })
-      .populate("userId", "name email profileImage address");
+      .populate("userId", "name email profileImage address")
+      .populate("centerId", "name address district upazila");
     console.log("a...", appointments);
 
     if (!appointments.length) {
@@ -127,6 +128,8 @@ exports.uniquePatients = async (req, res) => {
 exports.appointmentComplete = async (req, res) => {
   try {
     const { docId, appointmentId } = req.body;
+    console.log("ap.....", docId);
+    console.log("ap2.....", appointmentId);
     const appointmentData = await appointmentModel.findById(appointmentId);
     console.log("appoitnemnt...", appointmentData);
     if (appointmentData.status === "completed") {
