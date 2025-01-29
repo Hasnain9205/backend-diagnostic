@@ -5,6 +5,7 @@ const validator = require("validator");
 const appointmentModel = require("../models/appointmentModel");
 const centerModel = require("../models/centerModel");
 const cloudinary = require("cloudinary").v2;
+const mongoose = require("mongoose");
 
 exports.registerUser = async (req, res) => {
   try {
@@ -222,43 +223,67 @@ exports.updateUserProfile = async (req, res) => {
   }
 };
 
-// Book an appointment
 exports.bookAppointment = async (req, res) => {
   const { userId, docId, centerId, slotDate, slotTime } = req.body;
+  console.log("Request Body:", req.body);
 
   try {
+    // Validate required fields
     if (!userId || !docId || !centerId || !slotDate || !slotTime) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const doctor = await userModel.findById(docId);
-    const user = await userModel.findById(userId);
-    const center = await centerModel.findById(centerId);
-
-    if (!doctor) {
-      return res.status(404).json({ message: "Doctor not found" });
-    }
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    if (!center) {
-      return res.status(404).json({ message: "Center not found" });
+    // Validate ObjectId
+    if (
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !mongoose.Types.ObjectId.isValid(docId) ||
+      !mongoose.Types.ObjectId.isValid(centerId)
+    ) {
+      return res.status(400).json({ message: "Invalid ID format" });
     }
 
-    // Check if slot is already booked
-    const isSlotBooked = doctor.slots_booked.some(
-      (slot) =>
-        slot.slotDate === slotDate && slot.slotTime === slotTime && slot.booked
-    );
+    // Prevent past date selection
+    if (
+      new Date(slotDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0)
+    ) {
+      return res.status(400).json({
+        message: "Cannot book a Doctor appointment for a past date",
+      });
+    }
+
+    // Convert IDs to ObjectId
+    const docIdObjectId = new mongoose.Types.ObjectId(docId);
+    const userIdObjectId = new mongoose.Types.ObjectId(userId);
+    const centerIdObjectId = new mongoose.Types.ObjectId(centerId);
+
+    // Fetch doctor, user, and center data
+    const doctor = await userModel.findById(docIdObjectId);
+    const user = await userModel.findById(userIdObjectId);
+    const center = await centerModel.findById(centerIdObjectId);
+
+    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!center) return res.status(404).json({ message: "Center not found" });
+
+    // Check if the slot is already booked
+    const isSlotBooked = doctor.slots_booked.some((slot) => {
+      return (
+        new Date(slot.slotDate).toISOString().split("T")[0] ===
+          new Date(slotDate).toISOString().split("T")[0] &&
+        slot.slotTime === slotTime &&
+        slot.booked
+      );
+    });
+
     if (isSlotBooked) {
       return res.status(400).json({ message: "This slot is already booked" });
     }
 
     // Create appointment
     const appointment = new appointmentModel({
-      userId,
-      docId,
-      centerId,
+      userId: userIdObjectId,
+      docId: docIdObjectId,
+      centerId: centerIdObjectId,
       slotDate,
       slotTime,
       amount: doctor.fees,
@@ -271,17 +296,22 @@ exports.bookAppointment = async (req, res) => {
         name: user.name,
         email: user.email,
       },
-      date: Date.now(),
+      date: new Date(),
     });
 
     await appointment.save();
 
     // Mark the slot as booked
-    doctor.slots_booked = doctor.slots_booked.map((slot) =>
-      slot.slotDate === slotDate && slot.slotTime === slotTime
-        ? { ...slot, booked: true }
-        : slot
-    );
+    doctor.slots_booked.forEach((slot) => {
+      if (
+        new Date(slot.slotDate).toISOString().split("T")[0] ===
+          new Date(slotDate).toISOString().split("T")[0] &&
+        slot.slotTime === slotTime
+      ) {
+        slot.booked = true;
+      }
+    });
+
     await doctor.save();
 
     res.status(201).json({

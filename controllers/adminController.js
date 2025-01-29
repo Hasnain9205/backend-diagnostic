@@ -158,6 +158,7 @@ exports.getDoctor = async (req, res) => {
 };
 
 //update doctor api
+
 exports.updateDoctor = async (req, res) => {
   try {
     const doctorId = req.params.id;
@@ -165,14 +166,17 @@ exports.updateDoctor = async (req, res) => {
       name,
       email,
       password,
-      image,
+      profileImage,
       speciality,
       degree,
       experience,
-      about,
       fees,
       address,
       available,
+      district,
+      upazila,
+      chamber,
+      slots, // New field to handle slot updates or additions
     } = req.body;
 
     if (!doctorId) {
@@ -183,20 +187,51 @@ exports.updateDoctor = async (req, res) => {
     if (!doctor) {
       return res.status(404).json({ message: "Doctor not found" });
     }
+
+    // Update basic doctor information
     if (password) {
       doctor.password = await bcrypt.hash(password, 10);
     }
 
     doctor.name = name || doctor.name;
     doctor.email = email || doctor.email;
-    doctor.image = image || doctor.image;
+    doctor.profileImage = profileImage || doctor.profileImage;
     doctor.speciality = speciality || doctor.speciality;
     doctor.degree = degree || doctor.degree;
     doctor.experience = experience || doctor.experience;
-    doctor.about = about || doctor.about;
     doctor.fees = fees || doctor.fees;
     doctor.address = address || doctor.address;
     doctor.available = available !== undefined ? available : doctor.available;
+    doctor.district = district || doctor.district;
+    doctor.upazila = upazila || doctor.upazila;
+    doctor.chamber = chamber || doctor.chamber;
+
+    // Handle slots update or addition
+    if (slots && Array.isArray(slots)) {
+      slots.forEach((slot) => {
+        // Check if the slot already exists by matching both slotDate and slotTime
+        const existingSlotIndex = doctor.slots_booked.findIndex(
+          (existingSlot) =>
+            existingSlot.slotDate.toString() === slot.slotDate.toString() &&
+            existingSlot.slotTime === slot.slotTime
+        );
+
+        if (existingSlotIndex > -1) {
+          // If slot exists, update the booked status
+          doctor.slots_booked[existingSlotIndex].booked =
+            slot.booked !== undefined
+              ? slot.booked
+              : doctor.slots_booked[existingSlotIndex].booked;
+        } else {
+          // If slot doesn't exist, add the new slot
+          doctor.slots_booked.push({
+            slotDate: slot.slotDate,
+            slotTime: slot.slotTime,
+            booked: slot.booked || false,
+          });
+        }
+      });
+    }
 
     const updatedDoctor = await doctor.save();
     res.status(200).json({

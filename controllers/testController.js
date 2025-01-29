@@ -214,6 +214,13 @@ exports.bookTest = async (req, res) => {
       });
     }
 
+    // Prevent past date selection
+    if (new Date(appointmentDate) < new Date().setHours(0, 0, 0, 0)) {
+      return res
+        .status(400)
+        .json({ message: "Cannot book an Test appointment for a past date" });
+    }
+
     // Validate user and test existence
     const [user, test, center] = await Promise.all([
       userModel.findById(userId),
@@ -274,7 +281,7 @@ exports.getTestAppointment = async (req, res) => {
     const testAppointments = await testAppointmentModel
       .find({ userId })
       .populate("testId", "name price category")
-      .sort({ createdAt: -1 });
+      .sort({ date: -1 });
 
     return res.status(200).json({
       success: true,

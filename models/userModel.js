@@ -28,7 +28,6 @@ const userSchema = new mongoose.Schema(
     upazila: { type: String },
     chamber: { type: String },
     availability: { type: Array, default: [] },
-    approved: { type: Boolean, default: false },
 
     maxSlots: { type: Number, default: 20 },
     slots_booked: [

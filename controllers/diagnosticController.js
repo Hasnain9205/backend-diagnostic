@@ -317,6 +317,7 @@ exports.addDoctor = async (req, res) => {
       chamber,
       centerId,
     } = req.body;
+    console.log("data", req.body);
 
     if (!profileImage) {
       return res
@@ -390,6 +391,7 @@ exports.addDoctor = async (req, res) => {
       district,
       upazila,
       chamber,
+      centerId,
       profileImage,
       role: "doctor",
       date: Date.now(),
