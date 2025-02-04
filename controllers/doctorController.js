@@ -1,6 +1,7 @@
 const appointmentModel = require("../models/appointmentModel");
 const userModel = require("../models/userModel");
 const mongoose = require("mongoose");
+const nodemailer = require("nodemailer");
 
 // get doctorDetails api
 exports.doctorDetails = async (req, res) => {
@@ -128,31 +129,78 @@ exports.uniquePatients = async (req, res) => {
 exports.appointmentComplete = async (req, res) => {
   try {
     const { docId, appointmentId } = req.body;
+
     console.log("ap.....", docId);
     console.log("ap2.....", appointmentId);
+
+    // Find the appointment by ID
     const appointmentData = await appointmentModel.findById(appointmentId);
-    console.log("appoitnemnt...", appointmentData);
+    console.log("appointment...", appointmentData);
+
+    if (!appointmentData) {
+      return res.status(404).json({ msg: "Appointment not found" });
+    }
     if (appointmentData.status === "completed") {
       return res
         .status(400)
         .json({ msg: "This appointment is already completed" });
-    }
-
-    if (!appointmentData) {
-      return res.status(404).json({ msg: "Appointment not found" });
     }
     if (appointmentData.docId.toString() !== docId) {
       return res
         .status(400)
         .json({ msg: "Appointment does not belong to this doctor" });
     }
+
+    // Find the user (patient) by ID
+    const patient = await userModel.findById(appointmentData.userId);
+    if (!patient) {
+      return res.status(404).json({ msg: "Patient not found" });
+    }
+
+    // Update appointment status
     await appointmentModel.findByIdAndUpdate(appointmentId, {
       isCompleted: true,
       status: "completed",
     });
-    return res.status(200).json({ msg: "Appointment completed successfully" });
+
+    // Send confirmation email
+    await sendConfirmationEmail(patient.email, appointmentData);
+
+    return res
+      .status(200)
+      .json({ msg: "Appointment completed successfully, email sent" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
+  }
+};
+
+// Function to send email
+const sendConfirmationEmail = async (email, appointmentData) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Appointment Confirmation",
+      html: `
+        <h2>Appointment Completed</h2>
+        <p>Dear Patient,</p>
+        <p>Your appointment in <strong>${appointmentData.docData.name} </strong> on <strong>${appointmentData.slotDate}</strong> at <strong>${appointmentData.slotTime}</strong> has been successfully completed.</p>
+        <p>Thank you for visiting.</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully");
+  } catch (error) {
+    console.error("Error sending email:", error);
   }
 };
 
