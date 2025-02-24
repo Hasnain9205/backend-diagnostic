@@ -18,13 +18,14 @@
     "dotenv": "^16.4.6",
     "easyinvoice": "^3.0.47",
     "express": "^4.21.1",
+    "ics": "^3.8.1",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.9.0",
     "mongoose": "^8.8.2",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.10.0",
     "nodemon": "^3.1.7",
-    "pdfkit": "^0.15.1",
+    "pdfkit": "^0.15.2",
     "stripe": "^17.4.0",
     "validator": "^13.12.0"
   }

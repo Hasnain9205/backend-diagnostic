@@ -2,6 +2,7 @@ const appointmentModel = require("../models/appointmentModel");
 const userModel = require("../models/userModel");
 const mongoose = require("mongoose");
 const nodemailer = require("nodemailer");
+const { createEvent } = require("ics");
 
 // get doctorDetails api
 exports.doctorDetails = async (req, res) => {
@@ -125,57 +126,7 @@ exports.uniquePatients = async (req, res) => {
 };
 
 //completed appointment
-
-exports.appointmentComplete = async (req, res) => {
-  try {
-    const { docId, appointmentId } = req.body;
-
-    console.log("ap.....", docId);
-    console.log("ap2.....", appointmentId);
-
-    // Find the appointment by ID
-    const appointmentData = await appointmentModel.findById(appointmentId);
-    console.log("appointment...", appointmentData);
-
-    if (!appointmentData) {
-      return res.status(404).json({ msg: "Appointment not found" });
-    }
-    if (appointmentData.status === "completed") {
-      return res
-        .status(400)
-        .json({ msg: "This appointment is already completed" });
-    }
-    if (appointmentData.docId.toString() !== docId) {
-      return res
-        .status(400)
-        .json({ msg: "Appointment does not belong to this doctor" });
-    }
-
-    // Find the user (patient) by ID
-    const patient = await userModel.findById(appointmentData.userId);
-    if (!patient) {
-      return res.status(404).json({ msg: "Patient not found" });
-    }
-
-    // Update appointment status
-    await appointmentModel.findByIdAndUpdate(appointmentId, {
-      isCompleted: true,
-      status: "completed",
-    });
-
-    // Send confirmation email
-    await sendConfirmationEmail(patient.email, appointmentData);
-
-    return res
-      .status(200)
-      .json({ msg: "Appointment completed successfully, email sent" });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-// Function to send email
-const sendConfirmationEmail = async (email, appointmentData) => {
+const sendConfirmationEmail = async (to, subject, text, html, icsContent) => {
   try {
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -187,20 +138,115 @@ const sendConfirmationEmail = async (email, appointmentData) => {
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Appointment Confirmation",
-      html: `
-        <h2>Appointment Completed</h2>
-        <p>Dear Patient,</p>
-        <p>Your appointment in <strong>${appointmentData.docData.name} </strong> on <strong>${appointmentData.slotDate}</strong> at <strong>${appointmentData.slotTime}</strong> has been successfully completed.</p>
-        <p>Thank you for visiting.</p>
-      `,
+      to,
+      subject,
+      text,
+      html,
+      attachments: [
+        {
+          filename: "appointment.ics",
+          content: icsContent,
+          contentType: "text/calendar",
+        },
+      ],
     };
 
     await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully");
+    console.log("✅ Email sent successfully with calendar invite.");
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("❌ Email sending failed:", error.message);
+  }
+};
+
+exports.appointmentComplete = async (req, res) => {
+  try {
+    const { docId, appointmentId } = req.body;
+
+    // Find the appointment by ID and populate center details
+    const appointmentData = await appointmentModel
+      .findById(appointmentId)
+      .populate("centerId", "name address")
+      .populate("docId", "name");
+
+    if (!appointmentData) {
+      return res.status(404).json({ msg: "Appointment not found" });
+    }
+    if (appointmentData.status === "completed") {
+      return res
+        .status(400)
+        .json({ msg: "This appointment is already completed" });
+    }
+    if (appointmentData.docId._id.toString() !== docId) {
+      return res
+        .status(400)
+        .json({ msg: "Appointment does not belong to this doctor" });
+    }
+
+    // Find the patient by ID
+    const patient = await userModel.findById(appointmentData.userId);
+    if (!patient) {
+      return res.status(404).json({ msg: "Patient not found" });
+    }
+
+    // Update appointment status
+    await appointmentModel.findByIdAndUpdate(appointmentId, {
+      isCompleted: true,
+      status: "completed",
+    });
+
+    // Convert date & time to ICS format
+    const appointmentDate = new Date(appointmentData.slotDate);
+    const [hour, minute] = appointmentData.slotTime.split(":").map(Number);
+
+    // Generate dynamic event details
+    const event = {
+      start: [
+        appointmentDate.getFullYear(),
+        appointmentDate.getMonth() + 1, // Month is 0-based in JS
+        appointmentDate.getDate(),
+        hour,
+        minute,
+      ],
+      duration: { hours: 1 },
+      title: "Doctor Appointment Confirmation",
+      description: `Your appointment with Dr. ${appointmentData.docId.name} has been completed successfully.`,
+      location: `${appointmentData.centerId.name}, ${appointmentData.centerId.address}`,
+      status: "CONFIRMED",
+      busyStatus: "BUSY",
+      organizer: { name: "Diagnostic Center", email: process.env.EMAIL_USER },
+      attendees: [{ name: patient.name, email: patient.email }],
+    };
+
+    createEvent(event, async (error, icsContent) => {
+      if (error) {
+        console.error("❌ Error creating ICS file:", error);
+        return res
+          .status(500)
+          .json({ message: "Error generating calendar invite" });
+      }
+
+      // Send confirmation email with ICS attachment
+      const subject = "Your Appointment Confirmation";
+      const text = `Dear ${patient.name},\n\nYour appointment with Dr. ${appointmentData.docId.name} at ${appointmentData.centerId.name} on ${appointmentData.slotDate} at ${appointmentData.slotTime} has been successfully completed. Please check the attached calendar invite for details.\n\nThank you!`;
+      const html = `<p>Dear ${patient.name},</p>
+                    <p>Your appointment with <b>Dr. ${appointmentData.docId.name}</b> at <b>${appointmentData.centerId.name}</b> on <b>${appointmentData.slotDate} at ${appointmentData.slotTime}</b> has been successfully completed.</p>
+                    <p>Please check the attached calendar invite for details.</p>
+                    <p>Thank you!</p>`;
+
+      await sendConfirmationEmail(
+        patient.email,
+        subject,
+        text,
+        html,
+        icsContent
+      );
+
+      res.status(200).json({
+        msg: "✅ Appointment completed successfully, email with calendar invite sent.",
+      });
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
