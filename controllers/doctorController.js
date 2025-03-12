@@ -288,7 +288,7 @@ exports.doctorDashboard = async (req, res) => {
 
     // Fetch total earnings, appointments, and unique patients
     const totalEarnings = await appointmentModel.aggregate([
-      { $match: { docId: doctorObjectId, payment: true } },
+      { $match: { docId: doctorObjectId, payment: true, status: "completed" } },
       { $group: { _id: null, earnings: { $sum: "$amount" } } },
     ]);
 

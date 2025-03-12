@@ -60,7 +60,11 @@ testRouter.delete(
   authenticationRole(["admin", "diagnostic"]),
   deleteTest
 );
-testRouter.post("/cancel/:id", authenticationRole(["user"]), cancelTest);
+testRouter.post(
+  "/cancel/:id",
+  authenticationRole(["user", "diagnostic"]),
+  cancelTest
+);
 testRouter.post(
   "/create-payment-intent",
   authenticationRole(["user"]),

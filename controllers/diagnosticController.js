@@ -4,6 +4,7 @@ const centerModel = require("../models/centerModel");
 const userModel = require("../models/userModel");
 const testAppointmentModel = require("../models/testAppointmentModel");
 const appointmentModel = require("../models/appointmentModel");
+const employeeModel = require("../models/employeeModel");
 
 //add diagnostic api
 exports.addDiagnostic = async (req, res) => {
@@ -477,61 +478,76 @@ exports.diagnosticDashboard = async (req, res) => {
   try {
     const { centerId } = req.params;
 
+    // Fetch center data
     const centerData = await centerModel
       .findById(centerId)
       .populate("doctors", "name email phone specialty profileImage")
       .populate("tests", "name description price image status")
       .exec();
 
-    // Check if the center exists
+    // Check if center exists
     if (!centerData) {
       return res.status(404).json({ message: "Diagnostic center not found" });
     }
 
-    const tests = centerData.tests || [];
-    const doctors = centerData.doctors || [];
+    // Fetch employees data
+    const employeeData = await employeeModel
+      .find({ centerId })
+      .select("name email phone position image salary");
+    const employees = employeeData.length > 0 ? employeeData : [];
 
-    // Get total test appointments for the center
+    // Get total test & doctor appointments
     const totalTestAppointments = await testAppointmentModel.countDocuments({
       centerId,
     });
-
-    // Get total doctor appointments for the center
     const totalDoctorAppointments = await appointmentModel.countDocuments({
       centerId,
     });
 
+    // Get completed test appointments
     const completedTestAppointments = await testAppointmentModel
       .find({ centerId, status: "completed" })
       .populate("testId", "price")
       .exec();
-    console.log("completed...", completedTestAppointments);
 
+    // Calculate total revenue
     const totalRevenue = completedTestAppointments.reduce(
-      (total, appointment) => {
-        // Log to check if test and price are available
-        console.log("ttt...", appointment.testId);
-        if (appointment.testId && appointment.testId.price) {
-          return total + appointment.testId.price;
-        }
-        return total;
-      },
+      (total, appointment) => total + (appointment.testId?.price || 0),
       0
     );
 
-    console.log("Total Revenue:", totalRevenue);
+    // Calculate total cost (only if salary is given)
+    let totalCost = 0;
+    if (totalRevenue > 0) {
+      totalCost = employees.reduce((total, employee) => {
+        return employee.salary ? total + employee.salary : total;
+      }, 0);
+    }
 
-    const testCount = tests.length;
-    const doctorCount = doctors.length;
+    // Adjust cost based on revenue condition
+    if (totalRevenue > totalCost) {
+      totalRevenue -= totalCost;
+    } else {
+      totalCost = 0; // If revenue is lower than cost, no cost should be counted
+    }
 
-    // Return the dashboard data
+    // Get counts
+    const testCount = centerData.tests?.length || 0;
+    const doctorCount = centerData.doctors?.length || 0;
+    const employeeCount = employees.length;
+
+    // Return dashboard data
     return res.status(200).json({
       success: true,
       centerData,
+      employeeData,
       data: {
         totalRevenue,
+        totalCost,
+        netProfit: totalRevenue - totalCost,
         doctorCount,
         testCount,
+        employeeCount,
         totalTestAppointments,
         totalDoctorAppointments,
       },

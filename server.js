@@ -11,6 +11,7 @@ const invoiceRouter = require("./routes/invoiceRoutes");
 const userRouter = require("./routes/userRoutes");
 const diagnosticRouter = require("./routes/diagnosticRoutes");
 const prescriptionRouter = require("./routes/prescriptionRoutes");
+const employeeRouter = require("./routes/employeeRoutes");
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -43,6 +44,7 @@ app.use("/api/diagnostic", diagnosticRouter);
 app.use("/api/invoice", invoiceRouter);
 app.use("/api/payment", paymentRouter);
 app.use("/api/prescriptions", prescriptionRouter);
+app.use("/api/employee", employeeRouter);
 
 // Test route
 app.get("/", (req, res) => {

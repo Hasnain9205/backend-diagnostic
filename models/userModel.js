@@ -9,6 +9,13 @@ const userSchema = new mongoose.Schema(
         return this.role === "diagnostic";
       },
     },
+    employeeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
+      required: function () {
+        return this.role === "Employee";
+      },
+    },
 
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
@@ -39,7 +46,7 @@ const userSchema = new mongoose.Schema(
     ],
     role: {
       type: String,
-      enum: ["admin", "doctor", "diagnostic", "user"],
+      enum: ["admin", "doctor", "diagnostic", "user", "employee"],
       default: "user",
       required: true,
     },

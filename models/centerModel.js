@@ -12,7 +12,6 @@ const centerSchema = new mongoose.Schema(
     upazila: { type: String, required: true },
     doctors: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     tests: [{ type: mongoose.Schema.Types.ObjectId, ref: "Test" }],
-
     password: { type: String, required: true },
     profileImage: { type: String },
     phone: {
