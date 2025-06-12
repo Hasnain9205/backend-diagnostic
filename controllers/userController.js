@@ -50,6 +50,7 @@ exports.registerUser = async (req, res) => {
     const saltPass = await bcrypt.genSalt(10);
     const hashPass = await bcrypt.hash(password, saltPass);
 
+    let profileImage = "";
     if (req.file) {
       const fileType = req.file.mimetype.split("/")[0];
       if (fileType !== "image") {
