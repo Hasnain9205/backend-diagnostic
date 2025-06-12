@@ -23,6 +23,7 @@ connectDB();
 connectCloudinary();
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // CORS configuration
 const corsOptions = {
