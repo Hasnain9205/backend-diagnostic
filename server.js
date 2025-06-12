@@ -12,8 +12,10 @@ const userRouter = require("./routes/userRoutes");
 const diagnosticRouter = require("./routes/diagnosticRoutes");
 const prescriptionRouter = require("./routes/prescriptionRoutes");
 const employeeRouter = require("./routes/employeeRoutes");
+const leaveRouter = require("./routes/leaveRouter");
 
 const app = express();
+
 const port = process.env.PORT || 5001;
 
 // Connect to database and cloud services
@@ -45,6 +47,7 @@ app.use("/api/invoice", invoiceRouter);
 app.use("/api/payment", paymentRouter);
 app.use("/api/prescriptions", prescriptionRouter);
 app.use("/api/employee", employeeRouter);
+app.use("/api/leave", leaveRouter);
 
 // Test route
 app.get("/", (req, res) => {

@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Employee",
       required: function () {
-        return this.role === "Employee";
+        return this.role === "employee";
       },
     },
 

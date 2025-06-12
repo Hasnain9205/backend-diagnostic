@@ -13,7 +13,7 @@ const centerSchema = new mongoose.Schema(
     doctors: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     tests: [{ type: mongoose.Schema.Types.ObjectId, ref: "Test" }],
     password: { type: String, required: true },
-    profileImage: { type: String },
+    profileImage: { type: String, required: true },
     phone: {
       type: String,
       required: true,

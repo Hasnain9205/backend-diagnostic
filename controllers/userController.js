@@ -106,12 +106,12 @@ exports.loginUser = async (req, res) => {
     const accessToken = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" } // Adjust as needed
+      { expiresIn: "15m" }
     );
     const refreshToken = jwt.sign(
-      { id: user._id, role: user.role }, // Include role if necessary
+      { id: user._id, role: user.role },
       process.env.REFRESH_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "1d" }
     );
 
     // Return response
@@ -133,15 +133,14 @@ exports.loginUser = async (req, res) => {
 };
 
 exports.refreshToken = async (req, res) => {
-  const { refreshToken } = req.body; // Get the refresh token from request body
+  const { token } = req.body;
 
-  if (!refreshToken) {
+  if (!token) {
     return res.status(401).json({ msg: "No refresh token provided" });
   }
 
   try {
-    // Verify the refresh token
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+    const decoded = jwt.verify(token, process.env.REFRESH_SECRET);
     const user = await userModel.findById(decoded.id);
     if (!user) {
       return res.status(404).json({ msg: "User not found" });
@@ -151,14 +150,16 @@ exports.refreshToken = async (req, res) => {
     const newAccessToken = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" } // Expiry for new access token
+      { expiresIn: "1d" }
     );
-
-    // Send new access token to the client
     res.status(200).json({ accessToken: newAccessToken });
-  } catch (error) {
-    console.error(error);
-    return res.status(401).json({ msg: "Invalid or expired refresh token" });
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return res
+        .status(401)
+        .json({ message: "Refresh token expired. Please login again." });
+    }
+    return res.status(403).json({ message: "Invalid refresh token" });
   }
 };
 
@@ -390,16 +391,27 @@ exports.cancelAppointment = async (req, res) => {
 
 exports.updateRole = async (req, res) => {
   try {
-    const { role } = req.body;
-    const validRoles = ["doctor", "diagnostic", "admin", "user"];
+    const { userId } = req.params;
+    const { role, employeeId } = req.body;
+    const validRoles = ["doctor", "diagnostic", "admin", "user", "employee"];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ msg: "Invalid role Specified" });
     }
-    const user = await userModel.findById(req.params.userId);
+    const user = await userModel.findById(userId);
     if (!user) {
       return res.status(404).json({ msg: "user not found" });
     }
     user.role = role;
+    if (role === "employee") {
+      if (!employeeId) {
+        return res
+          .status(400)
+          .json({ message: "Employee ID is required for employee role" });
+      }
+      user.employeeId = employeeId;
+    } else {
+      user.employeeId = undefined;
+    }
     await user.save();
     res.status(200).json({ msg: "user role updated successfully", user });
   } catch (error) {

@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const { generateInvoice } = require("./generateInvoice");
 const centerModel = require("../models/centerModel");
+const centerRevenueModel = require("../models/centerRevenueModel");
 const invoiceDir = path.join(__dirname, "../invoices");
 
 // Create Test
@@ -298,17 +299,49 @@ exports.getTestAppointment = async (req, res) => {
 
 exports.completedTestAppointment = async (req, res) => {
   const { appointmentId } = req.params;
+
   try {
     const appointment = await testAppointmentModel.findById(appointmentId);
+    console.log(appointment);
+
     if (!appointment) {
       return res.status(404).json({ msg: "Appointment not found" });
     }
+
     appointment.status = "completed";
     await appointment.save();
+
+    // Assuming appointment has a field 'testId' that references the test model
+    const testAppointment = await testModel.findById(appointment.testId);
+    if (!testAppointment) {
+      return res.status(404).json({ msg: "Test not found" });
+    }
+    console.log("object", testAppointment);
+    const revenueAmount = testAppointment.price || 0;
+    const costAmount = testAppointment.cost || 0;
+    const profit = revenueAmount - costAmount;
+
+    const now = new Date();
+    const month = now.getMonth() + 1; // Month is 0-indexed
+    const year = now.getFullYear();
+
+    // Update centerRevenue
+    const revenueUpdate = await centerRevenueModel.findOneAndUpdate(
+      { centerId: appointment.centerId, month, year },
+      {
+        $inc: {
+          totalRevenue: revenueAmount,
+          totalCost: costAmount,
+          netProfit: profit,
+        },
+      },
+      { upsert: true, new: true }
+    );
 
     res.status(200).json({
       message: "Appointment marked as completed successfully",
       appointment,
+      updatedRevenue: revenueUpdate,
     });
   } catch (error) {
     console.error("Error completing appointment:", error);

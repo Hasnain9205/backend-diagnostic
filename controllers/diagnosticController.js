@@ -5,6 +5,7 @@ const userModel = require("../models/userModel");
 const testAppointmentModel = require("../models/testAppointmentModel");
 const appointmentModel = require("../models/appointmentModel");
 const employeeModel = require("../models/employeeModel");
+const centerRevenueModel = require("../models/centerRevenueModel");
 
 //add diagnostic api
 exports.addDiagnostic = async (req, res) => {
@@ -473,92 +474,49 @@ exports.getDoctorByCenter = async (req, res) => {
   }
 };
 
-// Diagnostic Dashboard
 exports.diagnosticDashboard = async (req, res) => {
   try {
     const { centerId } = req.params;
 
-    // Fetch center data
     const centerData = await centerModel
       .findById(centerId)
       .populate("doctors", "name email phone specialty profileImage")
-      .populate("tests", "name description price image status")
-      .exec();
+      .populate("tests", "name description price image status");
 
-    // Check if center exists
     if (!centerData) {
       return res.status(404).json({ message: "Diagnostic center not found" });
     }
 
-    // Fetch employees data
-    const employeeData = await employeeModel
+    const [employeeData, totalTestAppointments, totalDoctorAppointments] =
+      await Promise.all([
+        employeeModel
+          .find({ centerId })
+          .select("name email phone position image salary"),
+        testAppointmentModel.countDocuments({ centerId }),
+        appointmentModel.countDocuments({ centerId }),
+      ]);
+
+    const centerRevenue = await centerRevenueModel
       .find({ centerId })
-      .select("name email phone position image salary");
-    const employees = employeeData.length > 0 ? employeeData : [];
+      .sort({ year: -1, month: -1 });
 
-    // Get total test & doctor appointments
-    const totalTestAppointments = await testAppointmentModel.countDocuments({
-      centerId,
-    });
-    const totalDoctorAppointments = await appointmentModel.countDocuments({
-      centerId,
-    });
-
-    // Get completed test appointments
-    const completedTestAppointments = await testAppointmentModel
-      .find({ centerId, status: "completed" })
-      .populate("testId", "price")
-      .exec();
-
-    // Calculate total revenue
-    const totalRevenue = completedTestAppointments.reduce(
-      (total, appointment) => total + (appointment.testId?.price || 0),
-      0
-    );
-
-    // Calculate total cost (only if salary is given)
-    let totalCost = 0;
-    if (totalRevenue > 0) {
-      totalCost = employees.reduce((total, employee) => {
-        return employee.salary ? total + employee.salary : total;
-      }, 0);
-    }
-
-    // Adjust cost based on revenue condition
-    if (totalRevenue > totalCost) {
-      totalRevenue -= totalCost;
-    } else {
-      totalCost = 0; // If revenue is lower than cost, no cost should be counted
-    }
-
-    // Get counts
-    const testCount = centerData.tests?.length || 0;
-    const doctorCount = centerData.doctors?.length || 0;
-    const employeeCount = employees.length;
-
-    // Return dashboard data
     return res.status(200).json({
       success: true,
       centerData,
       employeeData,
+      centerRevenue,
       data: {
-        totalRevenue,
-        totalCost,
-        netProfit: totalRevenue - totalCost,
-        doctorCount,
-        testCount,
-        employeeCount,
+        doctorCount: centerData.doctors.length,
+        testCount: centerData.tests.length,
+        employeeCount: employeeData.length,
         totalTestAppointments,
         totalDoctorAppointments,
       },
     });
   } catch (error) {
-    console.error("Error fetching diagnostic dashboard data:", {
-      message: error.message,
-      stack: error.stack,
-    });
+    console.error("Error fetching dashboard:", error);
     res.status(500).json({
-      message: "Internal server error",
+      message: "Internal server error while fetching dashboard",
       error: error.message,
     });
   }

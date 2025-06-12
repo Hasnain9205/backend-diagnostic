@@ -14,8 +14,15 @@ const EmployeeSchema = new mongoose.Schema({
   department: { type: String },
   salary: { type: Number, required: true },
   hireDate: { type: Date, default: Date.now },
-  image: { type: String },
+  profileImage: { type: String, required: true },
   status: { type: String, enum: ["active", "inactive"], default: "active" },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+EmployeeSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
 });
 
-module.exports = mongoose.model("Employee", EmployeeSchema);
+module.exports =
+  mongoose.models.Employee || mongoose.model("Employee", EmployeeSchema);
