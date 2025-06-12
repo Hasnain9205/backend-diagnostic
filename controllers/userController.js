@@ -20,6 +20,8 @@ exports.registerUser = async (req, res) => {
       upazila,
       age,
     } = req.body;
+    console.log("Body:", req.body);
+
     if (
       !name ||
       !email ||
@@ -60,7 +62,7 @@ exports.registerUser = async (req, res) => {
       const result = await cloudinary.uploader.upload(req.file.path);
       profileImage = result.secure_url;
     }
-
+    console.log("File:", req.file);
     const userData = {
       name,
       email,
