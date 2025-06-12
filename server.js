@@ -26,7 +26,10 @@ app.use(express.json());
 
 // CORS configuration
 const corsOptions = {
-  origin: ["http://localhost:5173", "https://cute-alpaca-261dbb.netlify.app"],
+  origin: [
+    "http://localhost:5173",
+    "https://delightful-kulfi-493196.netlify.app",
+  ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
